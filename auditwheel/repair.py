@@ -10,7 +10,7 @@ from distutils.spawn import find_executable
 from typing import Optional
 
 from .policy import get_replace_platforms
-from .wheeltools import InWheelCtx, add_platforms
+from .wheeltools import InWheelCtx, add_platforms, WheelToolsError
 from .wheel_abi import get_wheel_elfdata
 from .elfutils import elf_read_rpaths, is_subdir, elf_read_dt_needed
 from .hashfile import hashfile
@@ -94,8 +94,12 @@ def repair_wheel(wheel_path: str, abi: str, lib_sdir: str, out_dir: str,
                     check_call(['patchelf', '--replace-needed', n, soname_map[n][0], path])
 
         if update_tags:
-            ctx.out_wheel = add_platforms(ctx, [abi],
-                                          get_replace_platforms(abi))
+            try:
+                ctx.out_wheel = add_platforms(ctx, [abi],
+                                              get_replace_platforms(abi))
+            except WheelToolsError:
+                print("Pure python library - skipping wheel repair")
+                return
     return ctx.out_wheel
 
 
